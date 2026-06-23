@@ -1,0 +1,11 @@
+---
+- name: Install k3s agent and join the cluster
+  ansible.builtin.shell:
+    cmd: >
+      curl -sfL https://get.k3s.io |
+      INSTALL_K3S_CHANNEL={{ k3s_channel }}
+      K3S_URL={{ hostvars[groups['k3s_server'][0]].k3s_url }}
+      K3S_TOKEN={{ hostvars[groups['k3s_server'][0]].k3s_token }}
+      sh -s - agent
+  args:
+    creates: /usr/local/bin/k3s

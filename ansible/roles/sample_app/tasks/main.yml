@@ -1,0 +1,19 @@
+---
+- name: Copy voting app manifests to the server
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../apps/voting-app/"
+    dest: /opt/voting-app/
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Apply voting app manifests
+  ansible.builtin.command:
+    cmd: k3s kubectl apply -f /opt/voting-app/
+  register: apply_result
+  changed_when: "'created' in apply_result.stdout or 'configured' in apply_result.stdout"
+
+- name: Wait for voting app deployments to be available
+  ansible.builtin.command:
+    cmd: k3s kubectl -n vote wait --for=condition=available deployment --all --timeout=180s
+  changed_when: false

@@ -1,0 +1,24 @@
+# Copy this file to terraform.tfvars and fill in your environment values.
+# terraform.tfvars is gitignored so real credentials never get committed.
+
+# --- vCenter connection ---
+vsphere_server       = "vcenter.lab.local"
+vsphere_user         = "administrator@vsphere.local"
+vsphere_password     = "CHANGE_ME"
+allow_unverified_ssl = true
+
+# --- vSphere placement ---
+datacenter    = "Datacenter"
+cluster       = "Cluster"
+resource_pool = "Cluster/Resources"
+datastore     = "datastore1"
+network       = "VM Network"
+vm_folder     = ""
+template_name = "ubuntu-24.04-template"
+
+# --- Cluster shape ---
+cluster_name = "k3s-lab"
+agent_count  = 2
+
+# --- Guest SSH access (paste the contents of your public key) ---
+ssh_public_key = "ssh-ed25519 AAAA... user@host"

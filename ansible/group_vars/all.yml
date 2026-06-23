@@ -1,0 +1,14 @@
+---
+# Global variables for the k3s lab.
+
+# k3s version channel ("stable" tracks the latest stable release).
+k3s_channel: stable
+
+# Azure Migrate dependency-agent toggle.
+# false (default): nothing installed; the appliance does agentless discovery.
+# true: installs the Microsoft Dependency Agent on every node for
+#        agent-based dependency mapping.
+install_dependency_agent: false
+
+# URL for the Linux Dependency Agent installer (only used when the toggle is true).
+dependency_agent_url: "https://aka.ms/dependencyagentlinux"

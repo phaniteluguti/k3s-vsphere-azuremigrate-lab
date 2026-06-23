@@ -1,0 +1,33 @@
+# --- Terraform ---
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+!*.tfvars.example
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform.lock.hcl
+.terraformrc
+terraform.rc
+
+# --- Ansible generated artifacts ---
+ansible/inventory
+ansible/kubeconfig
+*.retry
+
+# --- Secrets / keys ---
+*.pem
+*_rsa
+*_ed25519
+id_*
+kubeconfig
+
+# --- Editor / OS ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

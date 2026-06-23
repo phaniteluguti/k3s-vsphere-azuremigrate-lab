@@ -1,0 +1,16 @@
+---
+# Installs the Microsoft Dependency Agent for Azure Migrate agent-based
+# dependency mapping. Only runs when install_dependency_agent is true.
+- name: Download the Linux dependency agent installer
+  ansible.builtin.get_url:
+    url: "{{ dependency_agent_url }}"
+    dest: /tmp/InstallDependencyAgent-Linux64.bin
+    mode: "0755"
+
+- name: Run the dependency agent installer
+  ansible.builtin.command:
+    cmd: /tmp/InstallDependencyAgent-Linux64.bin -s
+  args:
+    creates: /opt/microsoft/dependency-agent
+  register: depagent
+  changed_when: depagent.rc == 0

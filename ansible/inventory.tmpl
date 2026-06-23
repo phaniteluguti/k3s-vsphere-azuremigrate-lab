@@ -1,0 +1,14 @@
+---
+# Renders to ansible/inventory from Terraform outputs via scripts/render-inventory.sh
+# This file is a template; the generated 'inventory' file is gitignored.
+all:
+  vars:
+    ansible_user: ubuntu
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+  children:
+    k3s_server:
+      hosts:
+${server_hosts}
+    k3s_agents:
+      hosts:
+${agent_hosts}

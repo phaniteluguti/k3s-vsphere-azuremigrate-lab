@@ -1,0 +1,32 @@
+---
+- name: Prepare all nodes
+  hosts: all
+  become: true
+  gather_facts: true
+  roles:
+    - common
+
+- name: Install k3s server (control-plane)
+  hosts: k3s_server
+  become: true
+  roles:
+    - k3s_server
+
+- name: Join k3s agents (workers)
+  hosts: k3s_agents
+  become: true
+  roles:
+    - k3s_agent
+
+- name: Deploy sample voting app
+  hosts: k3s_server
+  become: true
+  roles:
+    - sample_app
+
+- name: Optionally install Azure Migrate dependency agent
+  hosts: all
+  become: true
+  roles:
+    - role: dependency_agent
+      when: install_dependency_agent | bool
