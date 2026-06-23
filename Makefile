@@ -8,10 +8,12 @@ TF_DIR    := terraform
 ANSIBLE   := ansible
 SCRIPTS   := scripts
 
-.PHONY: help init plan up provision configure down rebuild clean validate
+.PHONY: help install-prereqs setup init plan up provision configure down rebuild clean validate
 
 help:
 	@echo "Targets:"
+	@echo "  install-prereqs - install/upgrade terraform, ansible, jq, git on this controller (Debian/Ubuntu)"
+	@echo "  setup     - interactive: collect inputs and write terraform.tfvars"
 	@echo "  init      - terraform init"
 	@echo "  validate  - terraform validate"
 	@echo "  up        - provision VMs + configure cluster + deploy app"
@@ -20,6 +22,12 @@ help:
 	@echo "  down      - terraform destroy (tear down all VMs)"
 	@echo "  rebuild   - down then up (fresh environment)"
 	@echo "  clean     - remove generated inventory/kubeconfig"
+
+install-prereqs:
+	$(SCRIPTS)/install-prereqs.sh
+
+setup:
+	$(SCRIPTS)/setup.sh
 
 init:
 	cd $(TF_DIR) && terraform init
