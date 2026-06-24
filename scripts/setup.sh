@@ -181,7 +181,7 @@ NODE_DNS_CSV="1.1.1.1,8.8.8.8"
 if [[ "${USE_STATIC}" == "true" ]]; then
   IP_ALLOCATION="static"
   ask NODE_SUBNET_CIDR "Subnet CIDR (e.g. 10.35.1.0/24)"                 "$(prev node_subnet_cidr)"
-  ask NODE_IP_START    "Starting host number for the server (agents +1)" "$(prev_or node_ip_start 20)"
+  ask NODE_IP_START    "Server host number in the subnet, agents continue from it (e.g. 31 -> server .31, agent-1 .32, agent-2 .33)" "$(prev_or node_ip_start 20)"
   ask NODE_GATEWAY     "Gateway IP (blank = first host of the subnet)"   "$(prev node_gateway)"
   _prev_dns_csv="$(prev node_dns | tr -d '[]" ')"
   ask NODE_DNS_CSV     "DNS servers (comma-separated)"                   "${_prev_dns_csv:-1.1.1.1,8.8.8.8}"
