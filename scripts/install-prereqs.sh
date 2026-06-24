@@ -48,6 +48,19 @@ apt_update_once() {
   fi
 }
 
+# Fallback Ansible install via pip (used when the PPA/apt path is unavailable,
+# e.g. keyserver blocked or non-Ubuntu). Installs into the user's ~/.local.
+install_ansible_via_pip() {
+  yellow "    Falling back to a pip user install for Ansible"
+  apt_update_once
+  ${SUDO} apt-get install -y python3-pip
+  python3 -m pip install --user --upgrade ansible
+  if ! command -v ansible >/dev/null 2>&1; then
+    yellow "    Installed to ~/.local/bin — add it to PATH (restart your shell):"
+    yellow '      export PATH="$HOME/.local/bin:$PATH"'
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # Base CLI tools — install only the ones that are missing.
 # ---------------------------------------------------------------------------
@@ -129,14 +142,28 @@ else
     yellow "==> Ansible not found — installing"
   fi
   if lsb_release -is | grep -qi ubuntu; then
-    green "    Adding Ansible PPA"
-    ${SUDO} add-apt-repository -y --update ppa:ansible/ansible
-    ${SUDO} apt-get install -y ansible
+    # Add the Ansible PPA WITHOUT add-apt-repository: its default key fetch uses
+    # the legacy hkp keyserver protocol, which often times out behind firewalls.
+    # Fetch the signing key over HTTPS (443) instead, then add the repo manually.
+    green "    Adding Ansible PPA (HTTPS key fetch)"
+    ANSIBLE_PPA_KEY="6125E2A8C77F2818FB7BD15B93C4A3FD7BB9C367"
+    ANSIBLE_KEYRING="/usr/share/keyrings/ansible-archive-keyring.gpg"
+    if curl -fsSL --retry 3 --max-time 30 \
+         "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x${ANSIBLE_PPA_KEY}" \
+         | ${SUDO} gpg --dearmor -o "${ANSIBLE_KEYRING}" 2>/dev/null \
+       && [[ -s "${ANSIBLE_KEYRING}" ]]; then
+      ${SUDO} chmod 0644 "${ANSIBLE_KEYRING}"
+      echo "deb [signed-by=${ANSIBLE_KEYRING}] \
+https://ppa.launchpadcontent.net/ansible/ansible/ubuntu $(lsb_release -cs) main" \
+        | ${SUDO} tee /etc/apt/sources.list.d/ansible.list >/dev/null
+      ${SUDO} apt-get update -y
+      ${SUDO} apt-get install -y ansible || install_ansible_via_pip
+    else
+      yellow "    Could not fetch the Ansible PPA key (network/firewall)."
+      install_ansible_via_pip
+    fi
   else
-    green "    Installing Ansible via pipx (non-Ubuntu Debian)"
-    command -v pipx >/dev/null 2>&1 || { apt_update_once; ${SUDO} apt-get install -y pipx; }
-    pipx ensurepath
-    pipx install --force ansible || pipx upgrade ansible
+    install_ansible_via_pip
   fi
 fi
 
