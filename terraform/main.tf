@@ -85,6 +85,11 @@ resource "vsphere_virtual_machine" "node" {
   memory   = each.value.memory
   guest_id = data.vsphere_virtual_machine.template.guest_id
 
+  # Match the template's firmware (BIOS vs EFI). Cloning an EFI template into a
+  # BIOS VM fails to power on with "ACPI motherboard layout requires EFI".
+  firmware                = data.vsphere_virtual_machine.template.firmware
+  efi_secure_boot_enabled = data.vsphere_virtual_machine.template.efi_secure_boot_enabled
+
   scsi_type = data.vsphere_virtual_machine.template.scsi_type
 
   network_interface {
