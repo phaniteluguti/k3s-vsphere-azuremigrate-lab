@@ -22,7 +22,10 @@ red()    { printf '\033[31m%s\033[0m\n' "$*" >&2; }
 
 # Minimum versions required by this lab.
 TERRAFORM_MIN="1.5.0"
-ANSIBLE_MIN="2.15.0"
+# ansible-core 2.13 is the floor: it is the newest that still supports a
+# Python 3.8 control node (Ubuntu 20.04). Newer Pythons get newer Ansible
+# automatically via `pip install --upgrade ansible`.
+ANSIBLE_MIN="2.13.0"
 
 # Return 0 if $1 (have) >= $2 (need) using version sort.
 version_ge() {
@@ -149,19 +152,18 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Required Ansible collections — install only if not already present.
+# Required Ansible collections. Pinned to versions that support ansible-core
+# 2.13+ (community.general 8+ and ansible.posix 2+ drop 2.13, and
+# community.general 12 removed the modules/callbacks this lab relies on).
+# --force ensures a too-new version already present gets replaced.
 # ---------------------------------------------------------------------------
 ensure_collection() {
-  local coll="$1"
-  if ansible-galaxy collection list 2>/dev/null | grep -q "^${coll} "; then
-    green "==> Ansible collection ${coll} already present — skipping"
-  else
-    yellow "==> Installing Ansible collection ${coll}"
-    ansible-galaxy collection install "${coll}"
-  fi
+  local spec="$1"          # e.g. community.general:>=7.0.0,<8.0.0
+  yellow "==> Installing/pinning Ansible collection ${spec}"
+  ansible-galaxy collection install "${spec}" --force
 }
-ensure_collection community.general
-ensure_collection ansible.posix
+ensure_collection 'community.general:>=7.0.0,<8.0.0'
+ensure_collection 'ansible.posix:>=1.5.0,<2.0.0'
 
 # ---------------------------------------------------------------------------
 green ""

@@ -15,9 +15,12 @@ cd "${TF_DIR}"
 server_json="$(terraform output -json server_node)"
 agent_json="$(terraform output -json agent_nodes)"
 
-# Build indented "name:\n  ansible_host: ip" blocks.
+# Build indented "name:\n  ansible_host: ip" blocks. The host entries sit
+# under each group's `hosts:` key (6 spaces), so names are indented 8 spaces
+# and their ansible_host 10 spaces — otherwise Ansible treats them as sibling
+# keys of `hosts:` and matches zero hosts.
 to_hosts() {
-  echo "$1" | jq -r 'to_entries[] | "      \(.key):\n        ansible_host: \(.value)"'
+  echo "$1" | jq -r 'to_entries[] | "        \(.key):\n          ansible_host: \(.value)"'
 }
 
 server_hosts="$(to_hosts "${server_json}")"
