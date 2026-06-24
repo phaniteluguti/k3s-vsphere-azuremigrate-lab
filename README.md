@@ -209,6 +209,21 @@ SSH key, and the dependency-agent toggle), shows a review summary, then writes
 - remember previous answers as defaults on re-runs,
 - optionally run `make up` for you at the end.
 
+#### Quick (reuse saved answers, no prompts)
+
+Once `terraform/terraform.tfvars` exists, skip all the questions and reuse the
+saved values as-is:
+
+```bash
+make quick            # or: scripts/setup.sh --quick
+```
+
+`quick` prints the saved configuration, asks nothing, and offers to run
+`make up`. Use plain `make setup` when you want to **change** any input — it
+shows the saved values as editable defaults so you only retype what differs.
+(`make up` by itself also just applies the saved `terraform.tfvars`, prompting
+only for the vCenter password.)
+
 > **The vCenter password is never collected or stored.** It is supplied at
 > Terraform runtime via the `TF_VAR_vsphere_password` environment variable —
 > `make up` / `make down` prompt for it (input hidden) on every run, so it

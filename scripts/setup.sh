@@ -18,6 +18,17 @@ TF_DIR="${ROOT_DIR}/terraform"
 TFVARS="${TF_DIR}/terraform.tfvars"
 GROUP_VARS="${ROOT_DIR}/ansible/group_vars/all.yml"
 
+# --- Optional quick (non-interactive) mode ---
+# QUICK=1 (or --quick / -q) reuses the previously saved terraform.tfvars
+# without asking anything. Without it, setup is interactive and shows the
+# saved values as editable defaults.
+QUICK="${QUICK:-}"
+for _arg in "$@"; do
+  case "${_arg}" in
+    --quick|-q) QUICK=1 ;;
+  esac
+done
+
 bold()  { printf '\033[1m%s\033[0m\n' "$*"; }
 green() { printf '\033[32m%s\033[0m\n' "$*"; }
 yellow(){ printf '\033[33m%s\033[0m\n' "$*"; }
@@ -77,6 +88,29 @@ ask_yesno() {
 }
 
 bold "=== k3s-on-vSphere lab :: interactive setup ==="
+
+# --- Quick mode: reuse saved values, no prompts ---
+if [[ -n "${QUICK}" ]]; then
+  if [[ ! -f "${TFVARS}" ]]; then
+    red "Quick mode needs a saved configuration, but none was found at:"
+    red "  ${TFVARS}"
+    red "Run 'make setup' once (without --quick) to create it."
+    exit 1
+  fi
+  green "Quick mode: reusing saved values from ${TFVARS} (no prompts)."
+  echo
+  bold "--- Saved configuration ---"
+  grep -E '^(vsphere_server|vsphere_user|allow_unverified_ssl|datacenter|cluster|resource_pool|datastore|network|vm_folder|template_name|cluster_name|agent_count)[[:space:]]*=' "${TFVARS}" | sed 's/^/  /'
+  echo "  vsphere_password : (prompted at apply time; never stored)"
+  echo
+  green "Setup complete (quick)."
+  ask_yesno RUN_NOW "Run 'make up' now?" "n"
+  if [[ "${RUN_NOW}" == "true" ]]; then
+    ( cd "${ROOT_DIR}" && make up )
+  fi
+  exit 0
+fi
+
 echo "Press Enter to accept the [default] shown in brackets."
 echo
 

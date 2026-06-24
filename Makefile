@@ -8,12 +8,13 @@ TF_DIR    := terraform
 ANSIBLE   := ansible
 SCRIPTS   := scripts
 
-.PHONY: help install-prereqs setup init plan up provision configure down rebuild clean validate
+.PHONY: help install-prereqs setup quick init plan up provision configure down rebuild clean validate
 
 help:
 	@echo "Targets:"
 	@echo "  install-prereqs - install/upgrade terraform, ansible, jq, git on this controller (Debian/Ubuntu)"
-	@echo "  setup     - interactive: collect inputs and write terraform.tfvars"
+	@echo "  setup     - interactive: collect inputs and write terraform.tfvars (saved values shown as editable defaults)"
+	@echo "  quick     - non-interactive: reuse saved terraform.tfvars as-is (no prompts), then optionally 'make up'"
 	@echo "  init      - terraform init"
 	@echo "  validate  - terraform validate"
 	@echo "  up        - provision VMs + configure cluster + deploy app"
@@ -28,6 +29,9 @@ install-prereqs:
 
 setup:
 	$(SCRIPTS)/setup.sh
+
+quick:
+	$(SCRIPTS)/setup.sh --quick
 
 init:
 	cd $(TF_DIR) && terraform init
