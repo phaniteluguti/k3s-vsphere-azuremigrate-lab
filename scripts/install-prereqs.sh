@@ -48,20 +48,22 @@ apt_update_once() {
   fi
 }
 
-# Ensure pipx is available. pipx installs Python apps in isolated venvs and is
-# the method the Ansible project recommends. It uses only HTTPS to PyPI, so it
-# works the same on every distro — no apt PPA and no keyserver involved.
-ensure_pipx() {
-  command -v pipx >/dev/null 2>&1 && return 0
-  green "    Installing pipx"
+# Install Ansible into a self-contained virtualenv at /opt/ansible and expose
+# its binaries on the system PATH via /usr/local/bin (which is always on PATH).
+# No apt PPA, no keyserver, and no per-user PATH changes — so it works the same
+# on every distro and is usable immediately, in this shell and all future ones.
+ANSIBLE_VENV="/opt/ansible"
+install_ansible() {
   apt_update_once
-  # pipx is packaged on newer distros; older ones (e.g. Ubuntu 20.04) get it
-  # from PyPI via pip.
-  ${SUDO} apt-get install -y pipx 2>/dev/null \
-    || { ${SUDO} apt-get install -y python3-pip python3-venv; \
-         python3 -m pip install --user pipx; }
-  export PATH="${HOME}/.local/bin:${PATH}"
-  pipx ensurepath >/dev/null 2>&1 || true
+  ${SUDO} apt-get install -y python3 python3-venv python3-pip
+  ${SUDO} python3 -m venv "${ANSIBLE_VENV}"
+  ${SUDO} "${ANSIBLE_VENV}/bin/pip" install --quiet --upgrade pip wheel
+  ${SUDO} "${ANSIBLE_VENV}/bin/pip" install --upgrade ansible
+  local b
+  for b in ansible ansible-playbook ansible-galaxy ansible-vault \
+           ansible-config ansible-doc ansible-inventory ansible-pull; do
+    ${SUDO} ln -sf "${ANSIBLE_VENV}/bin/${b}" "/usr/local/bin/${b}"
+  done
 }
 
 # ---------------------------------------------------------------------------
@@ -142,9 +144,8 @@ else
   else
     yellow "==> Ansible not found — installing"
   fi
-  ensure_pipx
-  green "    Installing Ansible via pipx"
-  pipx install --force ansible
+  green "    Installing Ansible into ${ANSIBLE_VENV} (symlinked to /usr/local/bin)"
+  install_ansible
 fi
 
 # ---------------------------------------------------------------------------

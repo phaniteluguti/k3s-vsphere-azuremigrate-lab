@@ -112,8 +112,10 @@ present and only installs what is missing or below the minimum version:
   `gnupg`, `lsb-release`),
 - installs/upgrades **Terraform** via the HashiCorp apt repo only if it's
   missing or older than 1.5.0,
-- installs/upgrades **Ansible** via **pipx** (isolated venv, HTTPS-only — no
-  apt PPA or keyserver) only if it's missing or older than 2.15.0,
+- installs/upgrades **Ansible** into a self-contained venv at `/opt/ansible`,
+  symlinked into `/usr/local/bin` so it's on PATH immediately for every shell
+  (HTTPS-only — no apt PPA or keyserver), only if it's missing or older than
+  2.15.0,
 - installs the required Ansible collections (`community.general`,
   `ansible.posix`) only if not already present.
 
@@ -140,11 +142,14 @@ https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
   | sudo tee /etc/apt/sources.list.d/hashicorp.list
 sudo apt-get update && sudo apt-get install -y terraform
 
-# Ansible (via pipx — isolated venv, no PPA/keyserver needed)
-sudo apt-get install -y pipx || \
-  { sudo apt-get install -y python3-pip python3-venv; python3 -m pip install --user pipx; }
-pipx ensurepath          # then restart your shell, or: export PATH="$HOME/.local/bin:$PATH"
-pipx install ansible
+# Ansible (self-contained venv on the system PATH — no PPA/keyserver)
+sudo apt-get install -y python3 python3-venv python3-pip
+sudo python3 -m venv /opt/ansible
+sudo /opt/ansible/bin/pip install --upgrade pip ansible
+for b in ansible ansible-playbook ansible-galaxy ansible-vault \
+         ansible-config ansible-doc ansible-inventory ansible-pull; do
+  sudo ln -sf /opt/ansible/bin/$b /usr/local/bin/$b
+done
 
 # Required Ansible collections
 ansible-galaxy collection install community.general ansible.posix
