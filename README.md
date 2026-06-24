@@ -112,8 +112,8 @@ present and only installs what is missing or below the minimum version:
   `gnupg`, `lsb-release`),
 - installs/upgrades **Terraform** via the HashiCorp apt repo only if it's
   missing or older than 1.5.0,
-- installs/upgrades **Ansible** via the official PPA only if it's missing or
-  older than 2.15.0,
+- installs/upgrades **Ansible** via **pipx** (isolated venv, HTTPS-only — no
+  apt PPA or keyserver) only if it's missing or older than 2.15.0,
 - installs the required Ansible collections (`community.general`,
   `ansible.posix`) only if not already present.
 
@@ -130,7 +130,7 @@ are exactly what Option A automates.
 ```bash
 sudo apt-get update
 sudo apt-get install -y ca-certificates curl gnupg lsb-release \
-  software-properties-common git jq openssh-client make
+  git jq openssh-client make
 
 # Terraform (HashiCorp apt repo)
 curl -fsSL https://apt.releases.hashicorp.com/gpg \
@@ -140,9 +140,11 @@ https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
   | sudo tee /etc/apt/sources.list.d/hashicorp.list
 sudo apt-get update && sudo apt-get install -y terraform
 
-# Ansible (official PPA)
-sudo add-apt-repository -y --update ppa:ansible/ansible
-sudo apt-get install -y ansible
+# Ansible (via pipx — isolated venv, no PPA/keyserver needed)
+sudo apt-get install -y pipx || \
+  { sudo apt-get install -y python3-pip python3-venv; python3 -m pip install --user pipx; }
+pipx ensurepath          # then restart your shell, or: export PATH="$HOME/.local/bin:$PATH"
+pipx install ansible
 
 # Required Ansible collections
 ansible-galaxy collection install community.general ansible.posix
