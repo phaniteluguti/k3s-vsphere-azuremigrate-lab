@@ -107,7 +107,17 @@ echo
 bold "--- vSphere placement ---"
 ask DATACENTER    "Datacenter name"                          "$(prev datacenter)"
 ask CLUSTER       "Compute cluster name"                     "$(prev cluster)"
-ask RESOURCE_POOL "Resource pool (e.g. <cluster>/Resources)" "$(prev_or resource_pool "${CLUSTER}/Resources")"
+# Default the resource pool to <cluster>/Resources. If the previously stored
+# pool was just the old cluster's default, follow the (now possibly changed)
+# cluster name instead of keeping a stale value.
+_prev_pool="$(prev resource_pool)"
+_prev_cluster="$(prev cluster)"
+if [[ -z "${_prev_pool}" || "${_prev_pool}" == "${_prev_cluster}/Resources" ]]; then
+  _default_pool="${CLUSTER}/Resources"
+else
+  _default_pool="${_prev_pool}"
+fi
+ask RESOURCE_POOL "Resource pool (e.g. <cluster>/Resources)" "${_default_pool}"
 ask DATASTORE     "Datastore name"                           "$(prev datastore)"
 ask NETWORK       "Network / port group name"                "$(prev_or network "VM Network")"
 ask VM_FOLDER     "VM folder (blank = datacenter root)"      "$(prev vm_folder)"
