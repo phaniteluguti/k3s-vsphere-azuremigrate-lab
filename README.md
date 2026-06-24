@@ -96,17 +96,36 @@ The controller needs these tools:
 
 ### Install the prerequisites
 
-**Automated (Debian/Ubuntu/WSL):**
+You have two options — use the **script** (recommended), or run the **manual
+steps** for your OS. Both do the same thing; pick one.
+
+#### Option A — automated script (Debian/Ubuntu/WSL)
 
 ```bash
 make install-prereqs        # or: scripts/install-prereqs.sh
 ```
 
-This installs/upgrades everything above, adds the **HashiCorp** and **Ansible**
-apt repositories, and installs the required Ansible collections
-(`community.general`, `ansible.posix`).
+`scripts/install-prereqs.sh` is **idempotent** — it checks what is already
+present and only installs what is missing or below the minimum version:
 
-**Manual — Ubuntu / Debian / WSL** (exactly what the script runs):
+- installs missing base tools (`git`, `jq`, `make`, `openssh-client`, `curl`,
+  `gnupg`, `lsb-release`),
+- installs/upgrades **Terraform** via the HashiCorp apt repo only if it's
+  missing or older than 1.5.0,
+- installs/upgrades **Ansible** via the official PPA only if it's missing or
+  older than 2.15.0,
+- installs the required Ansible collections (`community.general`,
+  `ansible.posix`) only if not already present.
+
+Re-run it any time to upgrade — already-satisfied tools are skipped. For
+RHEL/macOS the script isn't supported; use the manual steps below.
+
+#### Option B — manual steps
+
+Use these if you prefer not to run the script, or you're on RHEL/macOS. They
+are exactly what Option A automates.
+
+**Ubuntu / Debian / WSL:**
 
 ```bash
 sudo apt-get update
@@ -129,7 +148,7 @@ sudo apt-get install -y ansible
 ansible-galaxy collection install community.general ansible.posix
 ```
 
-**Manual — RHEL / Rocky / Fedora:**
+**RHEL / Rocky / Fedora:**
 
 ```bash
 sudo dnf install -y git jq openssh-clients make
@@ -139,7 +158,7 @@ sudo dnf install -y terraform ansible
 ansible-galaxy collection install community.general ansible.posix
 ```
 
-**Manual — macOS (Homebrew):**
+**macOS (Homebrew):**
 
 ```bash
 brew tap hashicorp/tap
@@ -147,10 +166,10 @@ brew install hashicorp/tap/terraform ansible jq git make
 ansible-galaxy collection install community.general ansible.posix
 ```
 
-**Upgrading later:** re-run `make install-prereqs`, or on apt:
+**Upgrading later:** re-run `make install-prereqs` (Option A), or on apt:
 `sudo apt-get update && sudo apt-get install --only-upgrade terraform ansible`.
 
-Verify:
+**Verify (either option):**
 
 ```bash
 terraform version && ansible --version && jq --version
