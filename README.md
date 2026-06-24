@@ -56,6 +56,7 @@ containers/
 └── scripts/
     ├── install-prereqs.sh        # install/upgrade controller tooling
     ├── setup.sh                  # interactive input collection -> tfvars
+    ├── tf.sh                     # terraform wrapper; prompts for vCenter pw
     └── render-inventory.sh       # terraform outputs -> ansible inventory
 ```
 
