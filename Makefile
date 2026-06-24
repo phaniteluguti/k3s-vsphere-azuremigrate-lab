@@ -8,6 +8,10 @@ TF_DIR    := terraform
 ANSIBLE   := ansible
 SCRIPTS   := scripts
 
+# Prefer the self-contained venv Ansible (2.15+) installed by install-prereqs;
+# fall back to whatever ansible-playbook is on PATH.
+ANSIBLE_PB := $(firstword $(wildcard /opt/ansible/bin/ansible-playbook) ansible-playbook)
+
 .PHONY: help install-prereqs setup quick init plan up provision configure down rebuild clean validate
 
 help:
@@ -47,7 +51,11 @@ provision: init
 
 configure:
 	bash $(SCRIPTS)/render-inventory.sh
-	cd $(ANSIBLE) && ansible-playbook site.yml
+	# ANSIBLE_CONFIG is set explicitly so the config (and its inventory =
+	# ./inventory) is honored even when the repo dir is world-writable, which
+	# otherwise makes Ansible ignore ansible.cfg and match zero hosts. -i is
+	# passed too as a belt-and-suspenders for that case.
+	cd $(ANSIBLE) && ANSIBLE_CONFIG=ansible.cfg $(ANSIBLE_PB) -i inventory site.yml
 
 up:
 	SETUP_SKIP_RUN=1 bash $(SCRIPTS)/setup.sh
