@@ -166,9 +166,13 @@ ensure_collection ansible.posix
 # ---------------------------------------------------------------------------
 green ""
 green "==> Versions in use:"
-terraform version | head -n1
-ansible --version | head -n1
-jq --version
-git --version
+# Capture full output, then print just the first line via parameter expansion.
+# No pipe to `head` (avoids SIGPIPE/141 under `set -o pipefail`) and no process
+# substitution (avoids FIFO races), so it behaves identically on every machine.
+first_line() { local v; v="$("$@" 2>/dev/null || true)"; printf '%s\n' "${v%%$'\n'*}"; }
+first_line terraform version
+first_line ansible --version
+first_line jq --version
+first_line git --version
 echo
 green "Prerequisites ready. Next: run 'make setup' to configure your environment."
