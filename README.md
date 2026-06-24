@@ -45,6 +45,7 @@ containers/
 │   ├── variables.tf
 │   ├── outputs.tf
 │   ├── cloud-init.yaml.tpl
+│   ├── metadata.yaml.tpl         # hostname + network (static IP / DHCP)
 │   └── terraform.tfvars.example  # copy -> terraform.tfvars and fill in
 ├── ansible/                      # builds the cluster + deploys the app
 │   ├── ansible.cfg
@@ -239,6 +240,25 @@ make setup            # or: scripts/setup.sh
 Same interactive prompts as `make up`, but it only writes
 `terraform/terraform.tfvars` (and offers to provision at the end). Use it when
 you want to review or edit the config before applying.
+
+### Node IP allocation (static vs DHCP)
+
+During setup you choose how the nodes get their addresses:
+
+- **static** (recommended for AVS / NSX segments without DHCP): you provide a
+  subnet CIDR, a starting host number, an optional gateway (defaults to the
+  first host of the subnet) and DNS servers. Addresses are assigned in a stable
+  order — `server -> node_ip_start`, `agent-1 -> +1`, `agent-2 -> +2`, … — and
+  injected into each node via cloud-init network config (`metadata.yaml.tpl`).
+- **dhcp**: the port group assigns addresses; Terraform reports whatever
+  VMware Tools observes.
+
+> If you pick DHCP on a network without a working DHCP server, the nodes come
+> up without (or with duplicate) addresses and the Ansible step can't reach
+> them. Use static in that case.
+
+The matching variables in `terraform.tfvars` are `ip_allocation`,
+`node_subnet_cidr`, `node_ip_start`, `node_gateway` and `node_dns`.
 
 > In every case the vCenter password is asked only at provision time (input
 > hidden) and is never written to disk.

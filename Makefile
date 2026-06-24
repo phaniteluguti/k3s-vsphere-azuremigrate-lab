@@ -25,13 +25,13 @@ help:
 	@echo "  clean     - remove generated inventory/kubeconfig"
 
 install-prereqs:
-	$(SCRIPTS)/install-prereqs.sh
+	bash $(SCRIPTS)/install-prereqs.sh
 
 setup:
-	$(SCRIPTS)/setup.sh
+	bash $(SCRIPTS)/setup.sh
 
 quick:
-	SETUP_SKIP_RUN=1 $(SCRIPTS)/setup.sh --quick
+	SETUP_SKIP_RUN=1 bash $(SCRIPTS)/setup.sh --quick
 	$(MAKE) provision
 	$(MAKE) configure
 	@echo "Environment is up. kubeconfig written to ansible/kubeconfig"
@@ -43,20 +43,20 @@ validate: init
 	cd $(TF_DIR) && terraform validate
 
 provision: init
-	$(SCRIPTS)/tf.sh apply -auto-approve
+	bash $(SCRIPTS)/tf.sh apply -auto-approve
 
 configure:
-	$(SCRIPTS)/render-inventory.sh
+	bash $(SCRIPTS)/render-inventory.sh
 	cd $(ANSIBLE) && ansible-playbook site.yml
 
 up:
-	SETUP_SKIP_RUN=1 $(SCRIPTS)/setup.sh
+	SETUP_SKIP_RUN=1 bash $(SCRIPTS)/setup.sh
 	$(MAKE) provision
 	$(MAKE) configure
 	@echo "Environment is up. kubeconfig written to ansible/kubeconfig"
 
 down:
-	$(SCRIPTS)/tf.sh destroy -auto-approve
+	bash $(SCRIPTS)/tf.sh destroy -auto-approve
 
 rebuild: down up
 

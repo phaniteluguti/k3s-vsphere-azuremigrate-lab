@@ -22,5 +22,15 @@ template_name = "ubuntu-24.04-template"
 cluster_name = "k3s-lab"
 agent_count  = 2
 
+# --- Node IP allocation ---
+# "dhcp"  = let the port group / network assign addresses (needs working DHCP).
+# "static" = assign sequential addresses from node_subnet_cidr:
+#            server -> node_ip_start, agent-1 -> +1, agent-2 -> +2, ...
+ip_allocation    = "static"
+node_subnet_cidr = "10.35.1.0/24"
+node_ip_start    = 20
+node_gateway     = "" # blank = first host of node_subnet_cidr (e.g. 10.35.1.1)
+node_dns         = ["1.1.1.1", "8.8.8.8"]
+
 # --- Guest SSH access (paste the contents of your public key) ---
 ssh_public_key = "ssh-ed25519 AAAA... user@host"

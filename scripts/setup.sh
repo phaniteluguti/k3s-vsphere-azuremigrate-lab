@@ -166,6 +166,30 @@ ask CLUSTER_NAME "Node name prefix"           "$(prev_or cluster_name k3s-lab)"
 ask AGENT_COUNT  "Number of agent (worker) nodes" "$(prev_or agent_count 2)"
 echo
 
+# --- Node IP allocation ---
+bold "--- Node IP allocation ---"
+echo "Static is recommended unless the port group has working DHCP."
+_prev_alloc="$(prev ip_allocation)"
+_default_static="y"; [[ "${_prev_alloc}" == "dhcp" ]] && _default_static="n"
+ask_yesno USE_STATIC "Assign static IPs to the nodes? (n = use DHCP)" "${_default_static}"
+# Sensible defaults so the values are always written (ignored in DHCP mode).
+IP_ALLOCATION="dhcp"
+NODE_SUBNET_CIDR=""
+NODE_IP_START="20"
+NODE_GATEWAY=""
+NODE_DNS_CSV="1.1.1.1,8.8.8.8"
+if [[ "${USE_STATIC}" == "true" ]]; then
+  IP_ALLOCATION="static"
+  ask NODE_SUBNET_CIDR "Subnet CIDR (e.g. 10.35.1.0/24)"                 "$(prev node_subnet_cidr)"
+  ask NODE_IP_START    "Starting host number for the server (agents +1)" "$(prev_or node_ip_start 20)"
+  ask NODE_GATEWAY     "Gateway IP (blank = first host of the subnet)"   "$(prev node_gateway)"
+  _prev_dns_csv="$(prev node_dns | tr -d '[]" ')"
+  ask NODE_DNS_CSV     "DNS servers (comma-separated)"                   "${_prev_dns_csv:-1.1.1.1,8.8.8.8}"
+fi
+# Build an HCL list literal from the comma-separated DNS entries.
+NODE_DNS_HCL="$(printf '%s' "${NODE_DNS_CSV}" | awk -F, '{o="";for(i=1;i<=NF;i++){gsub(/^[ \t]+|[ \t]+$/,"",$i); if($i!=""){o=o (o==""?"":", ") "\"" $i "\""}} print o}')"
+echo
+
 # --- SSH access ---
 bold "--- SSH access ---"
 default_pub=""
@@ -215,6 +239,7 @@ cat <<SUMMARY
   template       : ${TEMPLATE_NAME}
   node prefix    : ${CLUSTER_NAME}
   agent count    : ${AGENT_COUNT}
+  ip allocation  : ${IP_ALLOCATION}$( [[ "${IP_ALLOCATION}" == "static" ]] && printf ' (%s from host .%s, gw %s, dns %s)' "${NODE_SUBNET_CIDR}" "${NODE_IP_START}" "${NODE_GATEWAY:-<auto .1>}" "${NODE_DNS_CSV}" )
   dep. agent     : ${INSTALL_DEP_AGENT}
 SUMMARY
 ask_yesno CONFIRM "Write this configuration?" "y"
@@ -245,6 +270,15 @@ template_name = "${TEMPLATE_NAME}"
 # --- Cluster shape ---
 cluster_name = "${CLUSTER_NAME}"
 agent_count  = ${AGENT_COUNT}
+
+# --- Node IP allocation ---
+# ip_allocation = "dhcp" or "static". The node_* values below are only used
+# when ip_allocation = "static".
+ip_allocation    = "${IP_ALLOCATION}"
+node_subnet_cidr = "${NODE_SUBNET_CIDR}"
+node_ip_start    = ${NODE_IP_START}
+node_gateway     = "${NODE_GATEWAY}"
+node_dns         = [${NODE_DNS_HCL}]
 
 # --- Guest SSH access ---
 ssh_public_key = "${SSH_PUBLIC_KEY}"

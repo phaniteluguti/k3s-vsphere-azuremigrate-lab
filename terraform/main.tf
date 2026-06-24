@@ -73,6 +73,27 @@ locals {
   )
 }
 
+# ---------------------------------------------------------------------------
+# IP allocation: DHCP (default) or static addresses from node_subnet_cidr.
+# Static IPs are assigned in a stable order: server first, then agents.
+# ---------------------------------------------------------------------------
+locals {
+  static = var.ip_allocation == "static"
+
+  node_order = concat(
+    ["${var.cluster_name}-server"],
+    [for i in range(var.agent_count) : "${var.cluster_name}-agent-${i + 1}"]
+  )
+
+  node_ip = local.static ? {
+    for idx, name in local.node_order :
+    name => cidrhost(var.node_subnet_cidr, var.node_ip_start + idx)
+  } : {}
+
+  prefix  = local.static ? tonumber(split("/", var.node_subnet_cidr)[1]) : 0
+  gateway = local.static ? (var.node_gateway != "" ? var.node_gateway : cidrhost(var.node_subnet_cidr, 1)) : ""
+}
+
 resource "vsphere_virtual_machine" "node" {
   for_each = local.nodes
 
@@ -111,14 +132,32 @@ resource "vsphere_virtual_machine" "node" {
     template_uuid = data.vsphere_virtual_machine.template.id
   }
 
-  # cloud-init via vApp properties (Ubuntu cloud image supports this when the
-  # template has cloud-init's VMware datasource enabled).
+  # cloud-init via vApp/guestinfo properties. user-data installs the SSH key and
+  # base packages; meta-data carries the hostname and the network config
+  # (static IP or DHCP) so the nodes come up with predictable addresses.
   extra_config = {
-    "guestinfo.userdata"          = base64encode(templatefile("${path.module}/cloud-init.yaml.tpl", { hostname = each.key, ssh_public_key = var.ssh_public_key }))
+    "guestinfo.userdata" = base64encode(templatefile("${path.module}/cloud-init.yaml.tpl", {
+      hostname       = each.key
+      ssh_public_key = var.ssh_public_key
+    }))
     "guestinfo.userdata.encoding" = "base64"
+    "guestinfo.metadata" = base64encode(templatefile("${path.module}/metadata.yaml.tpl", {
+      hostname = each.key
+      dhcp4    = local.static ? "false" : "true"
+      ip       = local.static ? local.node_ip[each.key] : ""
+      prefix   = local.prefix
+      gateway  = local.gateway
+      dns      = join(", ", var.node_dns)
+    }))
+    "guestinfo.metadata.encoding" = "base64"
   }
 
   lifecycle {
     ignore_changes = [extra_config]
+
+    precondition {
+      condition     = var.ip_allocation != "static" || can(cidrhost(var.node_subnet_cidr, var.node_ip_start))
+      error_message = "ip_allocation = static requires a valid node_subnet_cidr (e.g. \"10.35.1.0/24\")."
+    }
   }
 }

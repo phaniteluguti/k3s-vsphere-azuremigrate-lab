@@ -115,3 +115,40 @@ variable "ssh_public_key" {
   description = "SSH public key injected into the 'ubuntu' user via cloud-init."
   type        = string
 }
+
+# ---------------------------------------------------------------------------
+# Node IP allocation
+# ---------------------------------------------------------------------------
+variable "ip_allocation" {
+  description = "How node IPs are assigned: \"dhcp\" (let the network assign) or \"static\" (assign from node_subnet_cidr)."
+  type        = string
+  default     = "dhcp"
+  validation {
+    condition     = contains(["dhcp", "static"], var.ip_allocation)
+    error_message = "ip_allocation must be \"dhcp\" or \"static\"."
+  }
+}
+
+variable "node_subnet_cidr" {
+  description = "Subnet CIDR used for static IPs, e.g. \"10.35.1.0/24\". Required when ip_allocation = static."
+  type        = string
+  default     = ""
+}
+
+variable "node_ip_start" {
+  description = "Starting host number within node_subnet_cidr for the server node; agents follow sequentially (e.g. 20 -> server .20, agent-1 .21, agent-2 .22)."
+  type        = number
+  default     = 20
+}
+
+variable "node_gateway" {
+  description = "Default gateway for static IPs. Empty = first host of node_subnet_cidr."
+  type        = string
+  default     = ""
+}
+
+variable "node_dns" {
+  description = "DNS servers for static IPs."
+  type        = list(string)
+  default     = ["1.1.1.1", "8.8.8.8"]
+}
