@@ -2,9 +2,11 @@
 # terraform.tfvars is gitignored so real credentials never get committed.
 
 # --- vCenter connection ---
+# NOTE: do NOT put the password here. It is supplied at runtime via the
+# TF_VAR_vsphere_password environment variable (you are prompted by `make up`
+# / `make down`, or `scripts/tf.sh`). This keeps the secret off disk entirely.
 vsphere_server       = "vcenter.lab.local"
 vsphere_user         = "administrator@vsphere.local"
-vsphere_password     = "CHANGE_ME"
 allow_unverified_ssl = true
 
 # --- vSphere placement ---

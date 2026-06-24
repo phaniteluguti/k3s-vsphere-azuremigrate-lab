@@ -97,8 +97,10 @@ fi
 bold "--- vCenter connection ---"
 ask        VSPHERE_SERVER   "vCenter server FQDN or IP"        "$(prev vsphere_server)"
 ask        VSPHERE_USER     "vCenter username"                 "$(prev_or vsphere_user administrator@vsphere.local)"
-ask_secret VSPHERE_PASSWORD "vCenter password (input hidden)"
 ask_yesno  ALLOW_SSL        "Allow self-signed vCenter certs?" "y"
+echo
+yellow "Note: the vCenter password is NOT collected or stored here."
+yellow "You will be prompted for it each time you run 'make up' / 'make down'."
 echo
 
 # --- vSphere placement ---
@@ -156,7 +158,7 @@ bold "--- Review ---"
 cat <<SUMMARY
   vCenter server : ${VSPHERE_SERVER}
   vCenter user   : ${VSPHERE_USER}
-  vCenter pass   : (hidden)
+  vCenter pass   : (prompted at apply time; never stored)
   allow self-SSL : ${ALLOW_SSL}
   datacenter     : ${DATACENTER}
   cluster        : ${CLUSTER}
@@ -179,9 +181,10 @@ cat > "${TFVARS}" <<EOF
 # This file is gitignored. Do not commit it.
 
 # --- vCenter connection ---
+# vsphere_password is intentionally NOT stored here. It is supplied at
+# terraform runtime via TF_VAR_vsphere_password (you are prompted by make up).
 vsphere_server       = "${VSPHERE_SERVER}"
 vsphere_user         = "${VSPHERE_USER}"
-vsphere_password     = "${VSPHERE_PASSWORD}"
 allow_unverified_ssl = ${ALLOW_SSL}
 
 # --- vSphere placement ---

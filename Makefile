@@ -36,7 +36,7 @@ validate: init
 	cd $(TF_DIR) && terraform validate
 
 provision: init
-	cd $(TF_DIR) && terraform apply -auto-approve
+	$(SCRIPTS)/tf.sh apply -auto-approve
 
 configure:
 	$(SCRIPTS)/render-inventory.sh
@@ -46,7 +46,7 @@ up: provision configure
 	@echo "Environment is up. kubeconfig written to ansible/kubeconfig"
 
 down:
-	cd $(TF_DIR) && terraform destroy -auto-approve
+	$(SCRIPTS)/tf.sh destroy -auto-approve
 
 rebuild: down up
 

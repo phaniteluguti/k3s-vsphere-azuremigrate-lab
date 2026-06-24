@@ -179,12 +179,17 @@ SSH key, and the dependency-agent toggle), shows a review summary, then writes
 
 - detect an existing SSH key (`~/.ssh/id_ed25519.pub` / `id_rsa.pub`) or
   generate a new one,
-- read the vCenter password **without echoing** it to the screen,
 - remember previous answers as defaults on re-runs,
 - optionally run `make up` for you at the end.
 
-> The generated `terraform.tfvars` is **gitignored** — secrets never get
-> committed.
+> **The vCenter password is never collected or stored.** It is supplied at
+> Terraform runtime via the `TF_VAR_vsphere_password` environment variable —
+> `make up` / `make down` prompt for it (input hidden) on every run, so it
+> only ever lives in memory for that single command. The generated
+> `terraform.tfvars` (which holds no password) is also **gitignored**.
+>
+> To run non-interactively (CI), export it yourself:
+> `export TF_VAR_vsphere_password='...'` before `make up`.
 
 ### Manual (alternative)
 
@@ -193,10 +198,14 @@ cp terraform/terraform.tfvars.example terraform/terraform.tfvars
 # edit terraform/terraform.tfvars
 ```
 
-Key values: `vsphere_server`, `vsphere_user`, `vsphere_password`,
+Key values: `vsphere_server`, `vsphere_user`,
 `datacenter`, `cluster`, `resource_pool`, `datastore`, `network`,
 `template_name`, and your `ssh_public_key`. Cluster shape lives in the same
 file: `agent_count`, `*_cpu`, `*_memory`, `*_disk_gb`.
+
+> Do **not** add `vsphere_password` to the file. Terraform reads it from the
+> `TF_VAR_vsphere_password` environment variable at runtime (you are prompted
+> automatically by `make up` / `make down`).
 
 ---
 
