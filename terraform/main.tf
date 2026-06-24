@@ -93,8 +93,11 @@ resource "vsphere_virtual_machine" "node" {
   }
 
   disk {
-    label            = "disk0"
-    size             = each.value.disk_gb
+    label = "disk0"
+    # A clone can never shrink the source disk, so never request less than the
+    # template's disk size. This makes the lab work with any template regardless
+    # of how large its base image is.
+    size             = max(each.value.disk_gb, data.vsphere_virtual_machine.template.disks[0].size)
     eagerly_scrub    = data.vsphere_virtual_machine.template.disks[0].eagerly_scrub
     thin_provisioned = data.vsphere_virtual_machine.template.disks[0].thin_provisioned
   }
