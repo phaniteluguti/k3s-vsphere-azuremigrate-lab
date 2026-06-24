@@ -13,12 +13,12 @@ SCRIPTS   := scripts
 help:
 	@echo "Targets:"
 	@echo "  install-prereqs - install/upgrade terraform, ansible, jq, git on this controller (Debian/Ubuntu)"
-	@echo "  setup     - interactive: collect inputs and write terraform.tfvars (saved values shown as editable defaults)"
-	@echo "  quick     - non-interactive: reuse saved terraform.tfvars as-is (no prompts), then optionally 'make up'"
+	@echo "  up        - interactive: prompt for inputs (saved values shown as editable defaults), then provision + configure"
+	@echo "  quick     - non-interactive: reuse saved terraform.tfvars as-is (no prompts), then provision + configure"
+	@echo "  setup     - interactive: collect inputs and write terraform.tfvars only (no provisioning)"
 	@echo "  init      - terraform init"
 	@echo "  validate  - terraform validate"
-	@echo "  up        - provision VMs + configure cluster + deploy app"
-	@echo "  provision - terraform apply only (create the 3 VMs)"
+	@echo "  provision - terraform apply only (create the VMs)"
 	@echo "  configure - render inventory + run ansible (cluster + app)"
 	@echo "  down      - terraform destroy (tear down all VMs)"
 	@echo "  rebuild   - down then up (fresh environment)"
@@ -31,7 +31,10 @@ setup:
 	$(SCRIPTS)/setup.sh
 
 quick:
-	$(SCRIPTS)/setup.sh --quick
+	SETUP_SKIP_RUN=1 $(SCRIPTS)/setup.sh --quick
+	$(MAKE) provision
+	$(MAKE) configure
+	@echo "Environment is up. kubeconfig written to ansible/kubeconfig"
 
 init:
 	cd $(TF_DIR) && terraform init
@@ -46,7 +49,10 @@ configure:
 	$(SCRIPTS)/render-inventory.sh
 	cd $(ANSIBLE) && ansible-playbook site.yml
 
-up: provision configure
+up:
+	SETUP_SKIP_RUN=1 $(SCRIPTS)/setup.sh
+	$(MAKE) provision
+	$(MAKE) configure
 	@echo "Environment is up. kubeconfig written to ansible/kubeconfig"
 
 down:

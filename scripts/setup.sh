@@ -104,9 +104,11 @@ if [[ -n "${QUICK}" ]]; then
   echo "  vsphere_password : (prompted at apply time; never stored)"
   echo
   green "Setup complete (quick)."
-  ask_yesno RUN_NOW "Run 'make up' now?" "n"
-  if [[ "${RUN_NOW}" == "true" ]]; then
-    ( cd "${ROOT_DIR}" && make up )
+  if [[ -z "${SETUP_SKIP_RUN:-}" ]]; then
+    ask_yesno RUN_NOW "Provision now with these values?" "n"
+    if [[ "${RUN_NOW}" == "true" ]]; then
+      ( cd "${ROOT_DIR}" && make provision configure )
+    fi
   fi
   exit 0
 fi
@@ -265,7 +267,9 @@ echo "Next steps:"
 echo "  make validate   # check the Terraform config"
 echo "  make up         # provision VMs, build k3s, deploy the app"
 echo
-ask_yesno RUN_NOW "Run 'make up' now?" "n"
-if [[ "${RUN_NOW}" == "true" ]]; then
-  ( cd "${ROOT_DIR}" && make up )
+if [[ -z "${SETUP_SKIP_RUN:-}" ]]; then
+  ask_yesno RUN_NOW "Provision now with these values?" "n"
+  if [[ "${RUN_NOW}" == "true" ]]; then
+    ( cd "${ROOT_DIR}" && make provision configure )
+  fi
 fi

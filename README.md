@@ -64,15 +64,24 @@ containers/
 
 ## Quick start (TL;DR)
 
-Run these three commands on your **controller** (a Linux/WSL machine):
+Run these on your **controller** (a Linux/WSL machine):
 
 ```bash
 make install-prereqs   # install terraform, ansible, jq, git (Debian/Ubuntu)
-make setup             # interactive prompts -> writes terraform.tfvars
-make up                # provision VMs, build k3s, deploy the voting app
+make up                # interactive: prompts (saved values as defaults) -> provision + configure
 ```
 
-The rest of this section explains each step and the manual alternatives.
+`make up` collects your inputs (showing any previously saved values as
+editable defaults), then provisions the VMs, builds k3s and deploys the app.
+Once you've run it once, reuse the saved answers with **no prompts**:
+
+```bash
+make quick             # reuse saved terraform.tfvars as-is -> provision + configure
+```
+
+The only thing ever asked at provision time is the vCenter password (hidden,
+never stored). The rest of this section explains each step and the manual
+alternatives.
 
 ---
 
@@ -193,36 +202,46 @@ terraform version && ansible --version && jq --version
 
 ## Configuration
 
-### Interactive (recommended)
+### `make up` — interactive (recommended)
+
+```bash
+make up               # prompts (saved values as defaults) -> provision + configure
+```
+
+`make up` prompts for every value (vCenter connection, placement, cluster
+shape, SSH key, and the dependency-agent toggle), showing any **previously
+saved values as editable defaults** so you only retype what differs. It then
+writes `terraform/terraform.tfvars`, updates `ansible/group_vars/all.yml`,
+provisions the VMs and configures the cluster. It can also:
+
+- detect an existing SSH key (`~/.ssh/id_ed25519.pub` / `id_rsa.pub`) or
+  generate a new one,
+- remember previous answers as defaults on re-runs.
+
+### `make quick` — reuse saved answers, no prompts
+
+Once `terraform/terraform.tfvars` exists, skip all the questions and reuse the
+saved values exactly as they are:
+
+```bash
+make quick            # reuse saved tfvars as-is -> provision + configure
+```
+
+`quick` prints the saved configuration, asks nothing, and goes straight to
+provisioning. Use `make up` instead whenever you want to **change** an input.
+
+### `make setup` — write config only (no provisioning)
 
 ```bash
 make setup            # or: scripts/setup.sh
 ```
 
-`setup` prompts for every value (vCenter connection, placement, cluster shape,
-SSH key, and the dependency-agent toggle), shows a review summary, then writes
-`terraform/terraform.tfvars` and updates
-`ansible/group_vars/all.yml`. It can:
+Same interactive prompts as `make up`, but it only writes
+`terraform/terraform.tfvars` (and offers to provision at the end). Use it when
+you want to review or edit the config before applying.
 
-- detect an existing SSH key (`~/.ssh/id_ed25519.pub` / `id_rsa.pub`) or
-  generate a new one,
-- remember previous answers as defaults on re-runs,
-- optionally run `make up` for you at the end.
-
-#### Quick (reuse saved answers, no prompts)
-
-Once `terraform/terraform.tfvars` exists, skip all the questions and reuse the
-saved values as-is:
-
-```bash
-make quick            # or: scripts/setup.sh --quick
-```
-
-`quick` prints the saved configuration, asks nothing, and offers to run
-`make up`. Use plain `make setup` when you want to **change** any input — it
-shows the saved values as editable defaults so you only retype what differs.
-(`make up` by itself also just applies the saved `terraform.tfvars`, prompting
-only for the vCenter password.)
+> In every case the vCenter password is asked only at provision time (input
+> hidden) and is never written to disk.
 
 > **The vCenter password is never collected or stored.** It is supplied at
 > Terraform runtime via the `TF_VAR_vsphere_password` environment variable —
@@ -255,8 +274,9 @@ file: `agent_count`, `*_cpu`, `*_memory`, `*_disk_gb`.
 
 ```bash
 make install-prereqs   # one-time: install tooling on the controller
-make setup             # interactive: write terraform.tfvars
-make up                # provision VMs, build k3s, deploy the voting app
+make up                # interactive: prompts (saved values as defaults) -> provision + configure
+make quick             # reuse saved tfvars as-is (no prompts) -> provision + configure
+make setup             # interactive: write terraform.tfvars only (no provisioning)
 make down              # destroy all VMs
 make rebuild           # down + up = a brand-new clean environment
 make clean             # remove generated inventory/kubeconfig
