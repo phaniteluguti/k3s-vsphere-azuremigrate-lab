@@ -132,22 +132,24 @@ resource "vsphere_virtual_machine" "node" {
     template_uuid = data.vsphere_virtual_machine.template.id
   }
 
-  # cloud-init via vApp/guestinfo properties. user-data installs the SSH key and
-  # base packages; meta-data carries the hostname and the network config
-  # (static IP or DHCP) so the nodes come up with predictable addresses.
+  # cloud-init via vApp/guestinfo properties. user-data installs the SSH key,
+  # base packages, and writes the node's netplan directly (static IP or DHCP).
+  # meta-data carries only the hostname. We do NOT put network config in
+  # meta-data because many Ubuntu templates disable cloud-init network
+  # rendering; writing netplan from user-data works on any template.
   extra_config = {
     "guestinfo.userdata" = base64encode(templatefile("${path.module}/cloud-init.yaml.tpl", {
       hostname       = each.key
       ssh_public_key = var.ssh_public_key
+      dhcp4          = local.static ? "false" : "true"
+      ip             = local.static ? local.node_ip[each.key] : ""
+      prefix         = local.prefix
+      gateway        = local.gateway
+      dns            = join(", ", var.node_dns)
     }))
     "guestinfo.userdata.encoding" = "base64"
     "guestinfo.metadata" = base64encode(templatefile("${path.module}/metadata.yaml.tpl", {
       hostname = each.key
-      dhcp4    = local.static ? "false" : "true"
-      ip       = local.static ? local.node_ip[each.key] : ""
-      prefix   = local.prefix
-      gateway  = local.gateway
-      dns      = join(", ", var.node_dns)
     }))
     "guestinfo.metadata.encoding" = "base64"
   }
